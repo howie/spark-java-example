@@ -1,0 +1,126 @@
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'java-library'
+apply plugin: 'distribution'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+compileJava {
+    sourceCompatibility = java_version
+    targetCompatibility = java_version
+
+    // Show all warnings except boot classpath
+    configure(options) {
+        encoding = "utf-8"
+        // workaround for nd4j use lombok
+        incremental = false                      //enable incremental compilation
+        fork = false                             //enable compilation in a separate daemon process
+    }
+
+}
+
+compileTestJava {
+    sourceCompatibility = java_version
+    targetCompatibility = java_version
+
+}
+
+
+clean {
+
+    delete "out"    //Intellij output
+    delete "target" //Eclipse
+    delete "build"  //Gradle
+    delete "bin"
+
+}
+
+
+shadowJar {
+    relocate 'com.google', 'shadow.com.google'
+    relocate 'org.apache.commons.cli', 'shadow.org.apache.commons.cli'
+    manifest {
+        attributes 'Main-Class': main_class
+    }
+    zip64 true
+}
+
+distZip {
+    archiveName = "${project.name}.zip"
+    zip64 true
+}
+
+distributions {
+    main {
+        contents {
+            from('src/main/scripts') {
+                into 'bin'
+            }
+
+            from(shadowJar.archivePath) {
+                into 'libs'
+            }
+        }
+    }
+}
+configurations.all {
+
+    //https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.ResolutionStrategy.html
+    resolutionStrategy {
+
+        // fail eagerly on version conflict (includes transitive dependencies)
+        // e.g. multiple different versions of the same dependency (group and name are equal)
+        failOnVersionConflict()
+
+        // prefer modules that are part of this build (multi-project or composite build) over external modules
+        preferProjectModules()
+
+    }
+}
+
+
+dependencies {
+
+
+    compile 'commons-cli:commons-cli:1.3.1'
+    compile('com.google.guava:guava:15.0') { force = true }
+    compile('org.slf4j:slf4j-api:1.7.16') { force = true }
+    compile('org.slf4j:slf4j-log4j12:1.7.16') { force = true }
+
+
+
+    //For config file (https://github.com/lightbend/config)
+    compile 'com.typesafe:config:1.3.1'
+    compile 'com.google.code.gson:gson:2.3.1'
+
+    //For Slack API
+    compile 'org.apache.httpcomponents:fluent-hc:4.2.5'
+
+
+    //For (WordSegmentService) Vector operator this will include lombok
+    compile 'org.nd4j:nd4j-native-platform:0.9.1'
+    annotationProcessor "org.projectlombok:lombok:1.16.18"
+    compile('org.bytedeco:javacpp:1.3.3') { force = true }
+
+    // Apache Spark
+    compileOnly 'org.apache.spark:spark-mllib_2.11:2.4.0'
+    compileOnly('org.apache.spark:spark-sql_2.11:2.4.0') {
+        exclude module: 'commons-cli'
+        exclude module: 'guava'
+    }
+
+    compileOnly 'org.apache.hadoop:hadoop-mapreduce-client-core:2.7.2'
+    compileOnly 'org.apache.hadoop:hadoop-common:2.7.2'
+
+    testCompile 'com.google.cloud.bigdataoss:gcs-connector:1.6.3-hadoop2'
+    testCompile 'org.apache.spark:spark-sql_2.11:2.3.1'
+    testCompile 'org.apache.spark:spark-mllib_2.11:2.3.1'
+    // Without this, you will get SLF4J-related error with more recent versions of Spark
+    testCompile 'junit:junit:4.+'
+    testCompile 'org.assertj:assertj-core-java8:1.0.0m1'
+
+    testCompile 'com.github.ywilkof:spark-jobs-rest-client:1.3.8'
+}
+
+
+

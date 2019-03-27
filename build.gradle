@@ -1,0 +1,25 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "2.0.4"
+}
+
+repositories {
+    jcenter()
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+project.ext {
+
+    main_class = 'tw.howie.example.spark.SparkApplication'
+    jar_name = "spark-java-exmaple-" + version + "-all.jar"
+    local_jar_path = "build/libs/" + jar_name
+
+
+}
+
+apply from: 'gradle/java.gradle'
+apply from: 'gradle/spark.gradle'
+
+
+

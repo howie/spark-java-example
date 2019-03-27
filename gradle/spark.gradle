@@ -1,0 +1,19 @@
+def taskName = "RunExample"
+def uploadSource = "build/libs/" + jar_name
+
+task run_spark_local(type: Exec) {
+
+    group = "spark"
+    description = "Run Example on local"
+
+    commandLine 'spark-submit',
+            '--deploy-mode', 'client',
+            '--master', 'local[*]',
+            uploadSource,
+            "--profile=dev",
+            "--cluster_name=local_test",
+            taskName
+
+}
+
+[run_spark_local,]*.dependsOn(shadowJar)
